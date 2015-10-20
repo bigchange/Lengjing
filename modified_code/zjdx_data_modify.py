@@ -67,7 +67,8 @@ class ZjdxDataLinux(object):
         """
         self.base_dir = 'D:/home/zjdx/'
         self.mysqlconn = MySQLdb.connect(host='192.168.0.33', user='root',
-                                        passwd='root', db='stock')
+                                         passwd='root', db='stock')
+        self.cursor = self.mysqlconn.cursor()
 
     def main(self):
         """Main function.
@@ -92,13 +93,13 @@ class ZjdxDataLinux(object):
         #     old_file_list.append(lines.strip('\n'))
         # file_old.close()
 
-        cursor = self.mysqlconn.cursor()
+        self.cursor = self.mysqlconn.cursor()
         try:
-            cursor.execute("select * from unbacked_redis_data")
+            self.cursor.execute("select * from unbacked_redis_data")
         except Exception, e:
             print e
-        result = cursor.fetchall()
-        old_file_list =[]
+        result = self.cursor.fetchall()
+        old_file_list = []
         for line in result:
             old_file_list.append(line[0])
 
@@ -114,15 +115,16 @@ class ZjdxDataLinux(object):
                 log.close()
                 load = load_data.LoadData(self.base_dir+line)
                 load.main()
-                cursor = self.mysqlconn.cursor()
                 try:
-                    cursor.execute("INSERT INTO unbacked_redis_data(unbacked_redis_stock) VALUES ('%s')" % line)
+                    self.cursor.execute("INSERT INTO unbacked_redis_data"
+                                        "(unbacked_redis_stock) VALUES ('%s')" % line)
+                    self.mysqlconn.commit()
                 except Exception, e:
                     print e
                 isexists = os.path.exists(self.base_dir+"unbacked_redis_files")
                 if not isexists:
                     os.makedirs(self.base_dir+"unbacked_redis_files")
-                    print self.base_dir+"unbacked_redis_files" + u' 创建成功'
+                    print self.base_dir+"unbacked_redis_files" + u' 创建成功\n'
                 shutil.move(self.base_dir+line, self.base_dir+"unbacked_redis_files")
                 # file_new = open(self.base_dir+'files', 'a+')
                 # file_new.write(line)
@@ -134,8 +136,8 @@ class ZjdxDataLinux(object):
                 log.write(end_out)
                 print end_out
                 log.close()
-            cursor.close()
-        self.mysqlconn.commit()
+        self.cursor.close()
+        # self.mysqlconn.commit()
         self.mysqlconn.close()
         # if tag == 0:
         #     if not os.path.exists(self.base_dir+'miss_data'):
@@ -166,12 +168,6 @@ class ZjdxDataLinux(object):
         #     miss_data_file.write('0')
         #     miss_data_file.close()
 
-
 if __name__ == '__main__':
-    """Main function.
-
-        Args:
-            no
-    """
     zjdx = ZjdxDataLinux()
     zjdx.main()

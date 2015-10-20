@@ -60,16 +60,16 @@ class BackupRemote(object):
         Attributes:
             no.
         """
-        remote_ip = '192.168.31.120'
-        user = 'database'
-        password = 'database'
+        remote_ip = '120.55.189.211'
+        user = 'root'
+        password = 'Dataservice2015'
         self.ssh = paramiko.SSHClient()
         self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         self.ssh.connect(remote_ip, 22, user, password)
         self.transport = paramiko.Transport((remote_ip, 22))
         self.transport.connect(username=user, password=password)
-        self.remote_path = '/home/database/remote/'
-        self.local_path = 'D:/QQ/Python_workspace/lengjing/home/local/'
+        self.remote_path = '/home/wht/'
+        self.local_path = 'D:/home/hadoop/wht/zjdx_backed/'
 
     def get_file_list(self, remote_path):
         """get remote file list.
@@ -83,7 +83,9 @@ class BackupRemote(object):
             remote_file = stdout.readlines()
         result = []
         for line in remote_file:
-            result.append(line.encode().split()[0])
+            grep = re.search(r'^kunyan_\d{10}$', line)
+            if grep:
+                result.append(line.encode().split()[0])
         return result
 
     def download_file(self, file_name):

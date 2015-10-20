@@ -59,14 +59,14 @@ class BackRedis(object):
         Args:
             no
         """
-        self.work_dir = '/home/zjdx/'
-        self.last_back_hour = '2015-09-26 01'
+        self.work_dir = 'D:/home/zjdx/'
+        # self.last_back_hour = '2015-09-26 01'
         redis_host = '192.168.0.2'
         redis_port = 6379
         redis_db = 6
         redis_password = 'kunyandata'
         self.redis1 = redis.StrictRedis(host=redis_host, port=redis_port,
-                                   db=redis_db, password=redis_password)
+                                        db=redis_db, password=redis_password)
         self.stock_codes = self.redis1.lrange('stock:list', 0, -1)
         try:
             self.conn = MySQLdb.connect(host='192.168.0.33', user='root',
@@ -85,7 +85,7 @@ class BackRedis(object):
         unbacked_list = self.cursor.fetchall()
         self.back_time = []
         for line in unbacked_list:
-            if len(line[0]) is 17:
+            if len(line[0]) > 16:
                 self.back_time.append(line[0][7:11] + '-' + line[0][11:13]
                                       + '-' + line[0][13:15] + ' ' + line[0][15:17])
         self.back_files = []
@@ -116,15 +116,15 @@ class BackRedis(object):
 
         search_count = self.redis1.get('search:count:%s' % hour)
         visit_count = self.redis1.get('visit:count:%s' % hour)
-        self.sql1 = "insert into search_count_per_hour(v_hour, " \
+        sql1 = "insert into search_count_per_hour(v_hour, " \
                     "i_frequency) VALUES ('%s', '%s')" \
                     % (hour, search_count)
-        self.sql2 = "insert into visit_count_per_hour(v_hour, " \
+        sql2 = "insert into visit_count_per_hour(v_hour, " \
                     "i_frequency) VALUES ('%s', '%s')" \
                     % (hour, visit_count)
         try:
-            self.cursor.execute(self.sql1)
-            self.cursor.execute(self.sql2)
+            self.cursor.execute(sql1)
+            self.cursor.execute(sql2)
         except Exception, e:
             print e
 
@@ -154,18 +154,18 @@ class BackRedis(object):
                 self._run(back_hour)
                 self.conn.commit()
 
-                self.sql = "insert into backed_hours(v_hour, " \
+                sql = "insert into backed_hours(v_hour, " \
                            "v_backed_time) VALUES ('%s', '%s')" \
                            % (back_hour, now_hour)
-                self.del_sql = "delete from unbacked_redis_data " \
+                del_sql = "delete from unbacked_redis_data " \
                                "where unbacked_redis_stock = '%s'" \
                                % self.back_files[self.back_time.index(back_hour)]
                 try:
-                    self.cursor.execute(self.sql)
-                    self.cursor.execute(self.del_sql)
+                    self.cursor.execute(sql)
+                    self.cursor.execute(del_sql)
+                    self.conn.commit()
                 except Exception, e:
                     print e
-                self.conn.commit()
                 print "backuped: "+back_hour+'\n'
 
     def _visit_per_hour_to_mysql(
@@ -175,15 +175,15 @@ class BackRedis(object):
         Args:
             no
         """
-        self.sql = "insert into stock_visit_per_hour(v_stock_hour," \
+        sql1 = "insert into stock_visit_per_hour(v_stock_hour," \
                    "i_visit_number) values ('%s', '%d')"\
                    % (stock_hour, visit_number)
-        self.sql2 = "insert into visit_stock(v_stock, v_hour, i_frequency) " \
+        sql2 = "insert into visit_stock(v_stock, v_hour, i_frequency) " \
                     "values ('%s', '%s', '%d')" \
                     % (stock_code, hour, visit_number)
         try:
-            self.cursor.execute(self.sql)
-            self.cursor.execute(self.sql2)
+            self.cursor.execute(sql1)
+            self.cursor.execute(sql2)
         except Exception, e:
             print e
 
@@ -194,23 +194,18 @@ class BackRedis(object):
         Args:
             no
         """
-        self.sql = "insert into stock_search_per_hour(v_stock_hour," \
+        sql1 = "insert into stock_search_per_hour(v_stock_hour," \
                    "i_search_number) values ('%s', '%d')"\
                    % (stock_hour, search_number)
-        self.sql2 = "insert into search_stock(v_stock, v_hour, i_frequency) " \
+        sql2 = "insert into search_stock(v_stock, v_hour, i_frequency) " \
                     "values ('%s', '%s', '%d')" \
                     % (stock_code, hour, search_number)
         try:
-            self.cursor.execute(self.sql)
-            self.cursor.execute(self.sql2)
+            self.cursor.execute(sql1)
+            self.cursor.execute(sql2)
         except Exception, e:
             print e
 
 if __name__ == '__main__':
-    """Main function.
-
-        Args:
-            no
-    """
     back_up_redis = BackRedis()
     back_up_redis.main()
