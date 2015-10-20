@@ -117,7 +117,7 @@ class ZjdxDataLinux(object):
                 load.main()
                 try:
                     self.cursor.execute("INSERT INTO unbacked_redis_data"
-                                        "(unbacked_redis_stock) VALUES ('%s')" % line)
+                                        "(unbacked_redis_file) VALUES ('%s')" % line)
                     self.mysqlconn.commit()
                 except Exception, e:
                     print e

@@ -158,7 +158,7 @@ class BackRedis(object):
                            "v_backed_time) VALUES ('%s', '%s')" \
                            % (back_hour, now_hour)
                 del_sql = "delete from unbacked_redis_data " \
-                               "where unbacked_redis_stock = '%s'" \
+                               "where unbacked_redis_file = '%s'" \
                                % self.back_files[self.back_time.index(back_hour)]
                 try:
                     self.cursor.execute(sql)

@@ -62,18 +62,18 @@ class InitTable(object):
             no.
         """
 
-        remote_ip = '120.55.189.211'
-        user = 'root'
-        password = 'Dataservice2015'
+        remote_ip = '192.168.31.120'
+        user = 'database'
+        password = 'database'
         self.ssh = paramiko.SSHClient()
         self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         self.ssh.connect(remote_ip, 22, user, password)
         self.transport = paramiko.Transport((remote_ip, 22))
         self.transport.connect(username=user, password=password)
-        self.remote_path = '/home/wht/'
-        self.local_path = 'D:/home/hadoop/wht/zjdx_backed/'
-        self.conn = MySQLdb.connect(host='192.168.0.33', user='root',
-                                    passwd='root', db='stock')
+        self.remote_path = '/home/database/remote/'
+        self.local_path = 'D:/home/'
+        self.conn = MySQLdb.connect(host='192.168.31.189', user='root',
+                                    passwd='root', db='db_machinekeyboard')
         self.curcor = self.conn.cursor()
 
     def get_files_list(self, remote_path):
@@ -90,7 +90,6 @@ class InitTable(object):
         for line in remote_file:
             result.append(line.encode().split()[0])
         return result
-
 
     def get_file_comment(self):
 
@@ -115,9 +114,9 @@ class InitTable(object):
                 results.append(line.split("\n")[0])
                 return results
         else:
-            print "Sorry, no file named files."
+            print "Sorry, no file named 'files'."
 
-    def init_table(self, insert_sql):
+    def create_table(self):
 
         """create table unbacked_redis_data.
 
@@ -128,9 +127,11 @@ class InitTable(object):
         """
         create_sql = "CREATE TABLE unbacked_redis_data " \
               "(unbacked_redis_stock VARCHAR(50))"
-        self.curcor.execute(create_sql)
-        self.curcor.execute(insert_sql)
-        self.conn.commit()
+        try:
+            self.curcor.execute(create_sql)
+            self.conn.commit()
+        except Exception, e:
+            print e
 
     def get_unbacked_list(self):
 
@@ -141,15 +142,29 @@ class InitTable(object):
         Attributes:
             no.
         """
-        self.curcor.execute("SELECT max(v_hour) FROM visit_stock")
-        max_visit = self.curcor.fetchone()
-        self.curcor.execute("SELECT max(v_hour) FROM search_stock")
-        max_search = self.curcor.fetchone()
+        try:
+            self.curcor.execute("SELECT v_hour FROM visit_stock GROUP BY v_hour")
+        except Exception, e:
+            print e
+        max_visit = self.curcor.fetchall()
+        try:
+            self.curcor.execute("SELECT v_hour FROM search_stock GROUP BY v_hour")
+        except Exception, e:
+            print e
+        max_search = self.curcor.fetchall()
         max_time = max(max_visit[0], max_search[0])
         file_comment = self.get_file_comment()
-        for line in file_comment:
-            time = line[7:11] + '-' + line[11:13] + '-' \
-                   + line[13:15] + ' ' + line[15:17]
+        time = []
+        if not file_comment:
+            for line in file_comment:
+                t = line[7:11]+ '-'+line[11:13]+ '-'\
+                       +line[13:15]+line[15:17]
+                if t > max_time:
+                    time.append(line)
+                    return time
+        else:
+            return None
+            print "All files have been backed"
 
 
     def main(self):
@@ -161,5 +176,30 @@ class InitTable(object):
         Attributes:
             no.
         """
+        files = self.get_file_comment()
+        unbacked_list = self.get_unbacked_list()
+        try:
+            self.curcor.execute("SHOW TABLES IN `stock`")
+        except Exception, e:
+            print e
+        table = self.curcor.fetchall()
+        tables = []
+        for item in table:
+            tables.append(item[0])
+        if "unbacked_redis_data" not in tables:
+            self.create_table()
+        for line in unbacked_list:
+            try:
+                self.curcor.execute("INSERT INTO unbacked_redis_data SET "
+                                    "unbacked_redis_file = '%s'" % line)
+                self.conn.commit()
+            except Exception, e:
+                print e
+        sftp = paramiko.SFTPClient.from_transport(self.transport)
+        for line in files:
+            sftp.get(self.remote_path+line, self.local_path+line)
 
+if __name__ == '__main__':
+    inti_table= InitTable()
+    inti_table.main()
 
