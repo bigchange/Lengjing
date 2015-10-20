@@ -121,9 +121,9 @@ class ZjdxDataLinux(object):
                     self.mysqlconn.commit()
                 except Exception, e:
                     print e
-                isexists = os.path.exists(self.base_dir+"unbacked_redis_files")
+                isexists = os.path.exists(self.base_dir+"unbacked_redis_files/")
                 if not isexists:
-                    os.makedirs(self.base_dir+"unbacked_redis_files")
+                    os.makedirs(self.base_dir+"unbacked_redis_files/")
                     print self.base_dir+"unbacked_redis_files" + u' 创建成功\n'
                 shutil.move(self.base_dir+line, self.base_dir+"unbacked_redis_files")
                 # file_new = open(self.base_dir+'files', 'a+')

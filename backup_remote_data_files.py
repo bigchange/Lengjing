@@ -72,7 +72,7 @@ class BackupRemote(object):
         self.local_path = 'D:/home/hadoop/wht/zjdx_backed/'
 
     def get_file_list(self, remote_path):
-        """get remote file list.
+        """get remote kunyan data file list.
 
 
         Attributes:
