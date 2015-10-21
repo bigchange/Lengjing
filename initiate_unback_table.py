@@ -40,6 +40,7 @@ initiate unback_redis_data table
 import MySQLdb
 import paramiko
 import os
+import sys
 import re
 
 class InitTable(object):
@@ -62,33 +63,49 @@ class InitTable(object):
             no.
         """
 
-        remote_ip = '192.168.31.120'
-        user = 'database'
-        password = 'database'
+        remote_ip = '120.55.189.211'
+        user = 'root'
+        password = 'Dataservice2015'
         self.ssh = paramiko.SSHClient()
         self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         self.ssh.connect(remote_ip, 22, user, password)
         self.transport = paramiko.Transport((remote_ip, 22))
         self.transport.connect(username=user, password=password)
-        self.remote_path = '/home/database/remote/'
+        self.remote_path = '/home/wht/'
         self.local_path = 'D:/home/'
-        self.conn = MySQLdb.connect(host='192.168.31.189', user='root',
-                                    passwd='root', db='db_machinekeyboard')
+        self.conn = MySQLdb.connect(host='192.168.0.33', user='root',
+                                    passwd='root', db='stock')
         self.curcor = self.conn.cursor()
 
-    def get_files_list(self, remote_path):
+    def get_files_list(self):
+        """get remote file list.
+
+
+        Attributes:
+            remote_path:remote path.
+        """
+        stdin, stdout, stderr = self.ssh.exec_command("ls %s" % self.remote_path)
+        if not stderr.readlines():
+            remote_file = stdout.readlines()
+        files = []
+        for line in remote_file:
+            files.append(line.encode().split()[0])
+        return files
+
+    def get_data_files_list(self):
+
         """get remote kunyan data file list.
 
 
         Attributes:
             remote_path:remote path.
         """
-        stdin, stdout, stderr = self.ssh.exec_command("ls %s" % remote_path)
-        if not stderr.readlines():
-            remote_file = stdout.readlines()
+        files = self.get_files_list()
         result = []
-        for line in remote_file:
-            result.append(line.encode().split()[0])
+        for line in files:
+            rep = re.search(r'^kunyan_\d{10}$', line)
+            if rep:
+                result.append(line)
         return result
 
     def get_file_comment(self):
@@ -101,10 +118,10 @@ class InitTable(object):
             no.
         """
 
-        remote_file_list = self.get_files_list(self.remote_path)
-        if 'file' in remote_file_list:
+        remote_file_list = self.get_files_list()
+        if 'files' in remote_file_list:
             sftp = paramiko.SFTPClient.from_transport(self.transport)
-            sftp.get(self.remote_path+'file', self.local_path+'file')
+            sftp.get(self.remote_path+'files', self.local_path+'files')
         isexists = os.path.exists(self.local_path+"files")
         if isexists:
             file_comment = open(self.local_path+"files")
@@ -112,7 +129,7 @@ class InitTable(object):
             results = []
             for line in result:
                 results.append(line.split("\n")[0])
-                return results
+            return results
         else:
             print "Sorry, no file named 'files'."
 
@@ -126,7 +143,7 @@ class InitTable(object):
             no.
         """
         create_sql = "CREATE TABLE unbacked_redis_data " \
-              "(unbacked_redis_stock VARCHAR(50))"
+              "(unbacked_redis_file VARCHAR(50))"
         try:
             self.curcor.execute(create_sql)
             self.conn.commit()
@@ -143,29 +160,63 @@ class InitTable(object):
             no.
         """
         try:
-            self.curcor.execute("SELECT v_hour FROM visit_stock GROUP BY v_hour")
+            self.curcor.execute("SELECT v_hour FROM backed_hours GROUP BY v_hour")
         except Exception, e:
             print e
-        max_visit = self.curcor.fetchall()
-        try:
-            self.curcor.execute("SELECT v_hour FROM search_stock GROUP BY v_hour")
-        except Exception, e:
-            print e
-        max_search = self.curcor.fetchall()
-        max_time = max(max_visit[0], max_search[0])
+        backed_hours = self.curcor.fetchall()
+        backed_hour_list = []
+        for line in backed_hours:
+            backed_hour_list.append(line[0])
         file_comment = self.get_file_comment()
         time = []
-        if not file_comment:
+        if file_comment:
             for line in file_comment:
-                t = line[7:11]+ '-'+line[11:13]+ '-'\
-                       +line[13:15]+line[15:17]
-                if t > max_time:
-                    time.append(line)
-                    return time
+                time_file = line[7:11]+'-'+line[11:13]+ '-'\
+                       +line[13:15]+' '+line[15:17]
+                if time_file not in backed_hour_list:
+                    time.append(t)
+            return time
         else:
-            return None
             print "All files have been backed"
+            return None
 
+    def down_load_files(self):
+
+        """down load files from remote.
+
+
+
+        Attributes:
+            no.
+        """
+        data_files = self.get_data_files_list()
+        remote_data_file_list = self.get_files_list()
+        unbacked_list = self.get_unbacked_list()
+        isexist = os.path.exists(self.local_path+'data_files/')
+        if not isexist:
+            os.mkdir(self.local_path+'data_files/')
+        if unbacked_list:
+            sftp = paramiko.SFTPClient.from_transport(self.transport)
+            print "begining to move data files"
+            j = ''
+            i = 1.0
+            length = len(remote_data_file_list)
+            last_index = 0
+            for line in data_files:
+                if line not in remote_data_file_list:
+                    continue
+                sftp.get(self.remote_path+line, self.local_path+'data_files/'+line)
+                local = os.path.exists(self.local_path+'data_files/'+line)
+                if local:
+                    self.ssh.exec_command("rm -f %s" % (self.remote_path+line))
+                index = int((i/length)*100)
+                sys.stdout.write(str(index)+'% ||'+j+'->'+"\r")
+                sys.stdout.flush()
+                if index > last_index:
+                    j += '#'
+                i += 1.0
+                last_index = index
+            print "move files end"
 
     def main(self):
 
@@ -176,30 +227,27 @@ class InitTable(object):
         Attributes:
             no.
         """
-        files = self.get_file_comment()
+        self.down_load_files()
         unbacked_list = self.get_unbacked_list()
-        try:
-            self.curcor.execute("SHOW TABLES IN `stock`")
-        except Exception, e:
-            print e
-        table = self.curcor.fetchall()
-        tables = []
-        for item in table:
-            tables.append(item[0])
-        if "unbacked_redis_data" not in tables:
-            self.create_table()
-        for line in unbacked_list:
+        if unbacked_list:
             try:
-                self.curcor.execute("INSERT INTO unbacked_redis_data SET "
-                                    "unbacked_redis_file = '%s'" % line)
-                self.conn.commit()
+                self.curcor.execute("SHOW TABLES IN `stock`")
             except Exception, e:
                 print e
-        sftp = paramiko.SFTPClient.from_transport(self.transport)
-        for line in files:
-            sftp.get(self.remote_path+line, self.local_path+line)
+            table = self.curcor.fetchall()
+            tables = []
+            if "unbacked_redis_data" not in tables:
+                self.create_table()
+            for item in table:
+                tables.append(item[0])
+            for line in unbacked_list:
+                try:
+                    self.curcor.execute("INSERT INTO unbacked_redis_data SET "
+                                        "unbacked_redis_file = '%s'" % line)
+                    self.conn.commit()
+                except Exception, e:
+                    print e
 
 if __name__ == '__main__':
-    inti_table= InitTable()
+    inti_table = InitTable()
     inti_table.main()
-

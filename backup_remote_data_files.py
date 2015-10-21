@@ -71,7 +71,7 @@ class BackupRemote(object):
         self.remote_path = '/home/wht/'
         self.local_path = 'D:/home/hadoop/wht/zjdx_backed/'
 
-    def get_file_list(self, remote_path):
+    def get_files_list(self, remote_path):
         """get remote kunyan data file list.
 
 
@@ -114,7 +114,7 @@ class BackupRemote(object):
         Attributes:
             no.
         """
-        remote_list = self.get_file_list(self.remote_path)
+        remote_list = self.get_files_list(self.remote_path)
         for line in remote_list:
             self.download_file(line)
             all_files = os.listdir(self.local_path)
