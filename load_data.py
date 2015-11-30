@@ -96,6 +96,21 @@ class LoadData(object):
             self.quan_pins.append(redis1.get('stock:%s:quanpin'
                                              % stock_code))
 
+    def _counts(self, file):
+
+        """initiate class
+
+        Load  stock data  time to redis.
+
+        Attributes:
+            input_file: input data..
+        """
+        i = 0
+        for line in file:
+            i += 1
+        file.seek(0)
+        return i
+
     def main(self):
         """Main function.
 
@@ -109,12 +124,7 @@ class LoadData(object):
         #     self.pipe2.execute()
         #     k += 1
         #     print k
-        count = -1
-        for count, lines in enumerate(open_file):
-            pass
-        count += 1
-        open_file.close()
-        open_file = open(self.input_file, 'r')
+        count = self._counts(open_file)
         j = 1
         k = 1
         for line in open_file:
