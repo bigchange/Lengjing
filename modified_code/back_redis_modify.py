@@ -61,16 +61,16 @@ class BackRedis(object):
         """
         self.work_dir = 'D:/home/zjdx/'
         # self.last_back_hour = '2015-09-26 01'
-        redis_host = '192.168.0.2'
+        redis_host = '120.55.189.211'
         redis_port = 6379
-        redis_db = 6
+        redis_db = 0
         redis_password = 'kunyandata'
         self.redis1 = redis.StrictRedis(host=redis_host, port=redis_port,
                                         db=redis_db, password=redis_password)
         self.stock_codes = self.redis1.lrange('stock:list', 0, -1)
         try:
-            self.conn = MySQLdb.connect(host='192.168.0.33', user='root',
-                                        passwd='root', db='stock')
+            self.conn = MySQLdb.connect(host='120.55.189.211', user='root',
+                                        passwd='hadoop', db='stock')
         except Exception, e:
             print e
         self.cursor = self.conn.cursor()

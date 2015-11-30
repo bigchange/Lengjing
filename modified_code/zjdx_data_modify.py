@@ -65,9 +65,9 @@ class ZjdxDataLinux(object):
         Args:
             no
         """
-        self.base_dir = 'D:/home/zjdx/'
-        self.mysqlconn = MySQLdb.connect(host='192.168.0.33', user='root',
-                                         passwd='root', db='stock')
+        self.base_dir = '/home/zjdx/'
+        self.mysqlconn = MySQLdb.connect(host='120.55.189.211', user='root',
+                                         passwd='hadoop', db='stock')
         self.cursor = self.mysqlconn.cursor()
 
     def main(self):
@@ -139,34 +139,34 @@ class ZjdxDataLinux(object):
         self.cursor.close()
         # self.mysqlconn.commit()
         self.mysqlconn.close()
-        # if tag == 0:
-        #     if not os.path.exists(self.base_dir+'miss_data'):
-        #         miss_data_file = open(self.base_dir+'miss_data', 'a+')
-        #         miss_data_file.write('0')
-        #         miss_data_file.close()
-        #     miss_data_file_read = open(self.base_dir+'miss_data', 'r')
-        #     miss_data = miss_data_file_read.read()
-        #     miss_data_file_read.close()
-        #     num_of_miss = int(miss_data) + 1
-        #     if num_of_miss > 4:
-        #         sms = send_sms.SendSms()
-        #         send_mms = sms.main('18668169052,18118973826', '【数据平台】电信没有数据传入')
-        #         if send_mms:
-        #             print "message sent success!"
-        #         else:
-        #             print "message sent faild!"
-        #     str_miss = str(num_of_miss)
-        #     miss_data_file_write = open(self.base_dir+'miss_data', 'w')
-        #     miss_data_file_write.write(str_miss)
-        #     miss_data_file_write.close()
-        # else:
-        #     if not os.path.exists(self.base_dir+'miss_data'):
-        #         miss_data_file = open(self.base_dir+'miss_data', 'a+')
-        #         miss_data_file.write('0')
-        #         miss_data_file.close()
-        #     miss_data_file = open(self.base_dir+'miss_data', 'w')
-        #     miss_data_file.write('0')
-        #     miss_data_file.close()
+        if tag == 0:
+            if not os.path.exists(self.base_dir+'miss_data'):
+                miss_data_file = open(self.base_dir+'miss_data', 'a+')
+                miss_data_file.write('0')
+                miss_data_file.close()
+            miss_data_file_read = open(self.base_dir+'miss_data', 'r')
+            miss_data = miss_data_file_read.read()
+            miss_data_file_read.close()
+            num_of_miss = int(miss_data) + 1
+            if num_of_miss > 4:
+                sms = send_sms.SendSms()
+                send_mms = sms.main('18668169052,18118973826', '【数据平台】电信没有数据传入')
+                if send_mms:
+                    print "message sent success!"
+                else:
+                    print "message sent faild!"
+            str_miss = str(num_of_miss)
+            miss_data_file_write = open(self.base_dir+'miss_data', 'w')
+            miss_data_file_write.write(str_miss)
+            miss_data_file_write.close()
+        else:
+            if not os.path.exists(self.base_dir+'miss_data'):
+                miss_data_file = open(self.base_dir+'miss_data', 'a+')
+                miss_data_file.write('0')
+                miss_data_file.close()
+            miss_data_file = open(self.base_dir+'miss_data', 'w')
+            miss_data_file.write('0')
+            miss_data_file.close()
 
 if __name__ == '__main__':
     zjdx = ZjdxDataLinux()

@@ -87,3 +87,7 @@ def get_unbacked_list():
         else:
             return None
             print "All files have been backed"
+
+for line in result:
+    sftp = paramiko.SFTPClient.from_transport(transport)
+    sftp.get(remote_path+line, local_path+line)
