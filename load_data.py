@@ -40,7 +40,6 @@ Load data to redis and mysql
 """
 import re
 import time
-import math
 import redis
 import string
 
@@ -74,18 +73,18 @@ class LoadData(object):
         Args:
             no
         """
-        server_ip = '120.55.189.211'
+        server_ip = '192.168.0.2'
         server_port = 6379
-        redis1 = redis.StrictRedis(host=server_ip, port=server_port,
-                                   db=0, password='7ifW4i@M')
-        self.stock_codes = redis1.lrange('stock:list', 0, -1)
-        redis2 = redis.StrictRedis(host=server_ip, port=server_port,
-                                   db=0, password='7ifW4i@M')
         # redis1 = redis.StrictRedis(host=server_ip, port=server_port,
-        #                            db=6, password='kunyandata')
+        #                            db=0, password='7ifW4i@M')
         # self.stock_codes = redis1.lrange('stock:list', 0, -1)
         # redis2 = redis.StrictRedis(host=server_ip, port=server_port,
-        #                            db=6, password='kunyandata')
+        #                            db=0, password='7ifW4i@M')
+        redis1 = redis.StrictRedis(host=server_ip, port=server_port,
+                                   db=6, password='kunyandata')
+        self.stock_codes = redis1.lrange('stock:list', 0, -1)
+        redis2 = redis.StrictRedis(host=server_ip, port=server_port,
+                                   db=6, password='kunyandata')
         self.pipe2 = redis2.pipeline()
         # self.pipe2 = redis2
         for stock_code in self.stock_codes:
@@ -103,7 +102,7 @@ class LoadData(object):
         Load  stock data  time to redis.
 
         Attributes:
-            input_file: input data..
+            file: data file
         """
         i = 0
         for line in file:
@@ -117,27 +116,69 @@ class LoadData(object):
         Args:
             no
         """
-        open_file = open(self.input_file, 'r')
+        start = time.time()
+        # open_file = open(self.input_file, 'r')
+        # # k = 1
+        # # for line in open_file:
+        # #     self._line_to_mysql_and_redis(line)
+        # #     self.pipe2.execute()
+        # #     k += 1
+        # #     print k
+        # count = self._counts(open_file)
+        # j = 1
         # k = 1
         # for line in open_file:
         #     self._line_to_mysql_and_redis(line)
-        #     self.pipe2.execute()
+        #     if k == count:
+        #         self.pipe2.execute()
+        #         print '%s load finished' % self.input_file
+        #     elif k > (j * 500000):
+        #         self.pipe2.execute()
+        #         j += 1
+        #         print j
         #     k += 1
-        #     print k
-        count = self._counts(open_file)
-        j = 1
-        k = 1
-        for line in open_file:
+        # open_file.close()
+        # end = time.time()
+
+        for line in self.input_file:
             self._line_to_mysql_and_redis(line)
-            if k == count:
-                self.pipe2.execute()
-                print '%s load finished' % self.input_file
-            elif k > (j * 500000):
-                self.pipe2.execute()
-                j += 1
-                print j
-            k += 1
-        open_file.close()
+        self.pipe2.execute()
+
+        # file = open(self.input_file, 'r')
+        # row_nums = self._counts(file)
+        # seg_ID = self._get_seg_ID(row_nums, 500000)
+        # data = {}
+        # for key in seg_ID:
+        #     data[key] = []
+        # counter = 0
+        # for line in file:
+        #     for key in seg_ID:
+        #         head = seg_ID[key][0]
+        #         end = seg_ID[key][1]
+        #         if head < counter < end:
+        #             data[key].append(line)
+        #     counter += 1
+        #
+        # for line in data[0]:
+        #     self._line_to_mysql_and_redis(line)
+        # self.pipe2.execute()
+
+
+    def _get_seg_ID(self, row_nums, k):
+
+        """initiate class
+
+        Get start ID of each block.
+
+        Attributes:
+            n: the row nums of file
+            k: the num of loading data every time.
+        """
+        n = row_nums/k
+        result = {}
+        for i in range(0, n+1):
+            result[i] = (i*k, (i+1)*k)
+        return result
 
     def _line_to_mysql_and_redis(self, line):
         """Load line data to redis.
@@ -267,5 +308,5 @@ if __name__ == '__main__':
         Args:
             no
    """
-    load = LoadData('kunyan_2015092613')
+    load = LoadData('D:/home/jsdx/jsdx_2015111313')
     load.main()
